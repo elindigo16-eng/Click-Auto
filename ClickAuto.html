@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Gestión de Taller - Protocolo, Recepción y Entrega</title>
+  <style>
+    :root { --primary: #1e40af; --bg: #f1f5f9; --card: #ffffff; --text: #0f172a; --border: #cbd5e1; }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 70px; }
+    header { background: var(--primary); color: #fff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand img { height: 38px; width: 38px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; display: none; }
+    header h1 { margin: 0; font-size: 1.1rem; }
+    nav { display: flex; background: #fff; border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: 0; z-index: 30; }
+    nav button {
+      flex: 1; min-width: 86px; padding: 13px 6px; border: none; background: transparent;
+      font-weight: 700; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; font-size: 0.82rem;
+    }
+    nav button.active { color: var(--primary); border-bottom-color: var(--primary); background: #eff6ff; }
+    .container { max-width: 860px; margin: 14px auto; padding: 0 12px; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .card { background: var(--card); border-radius: 10px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+    .card h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--primary); }
+    .step-box { border-left: 4px solid var(--primary); background: #f8fafc; padding: 10px 12px; margin-bottom: 10px; border-radius: 0 8px 8px 0; font-size: 0.9rem; line-height: 1.45; }
+    .timer-bar { background: #0f172a; color: #fff; padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+    .digits { font-size: 1.35rem; font-weight: 800; font-family: monospace; color: #38bdf8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fff; }
+    .btn { padding: 10px 14px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
+    .btn-sm { padding: 7px 10px; font-size: 0.8rem; }
+    .btn-p { background: var(--primary); color: #fff; }
+    .btn-s { background: #16a34a; color: #fff; }
+    .btn-w { background: #d97706; color: #fff; }
+    .btn-o { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-d { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+    .chip { border: 1px solid var(--border); padding: 6px 10px; border-radius: 16px; font-size: 0.8rem; cursor: pointer; background: #f8fafc; user-select: none; }
+    .chip.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .foto-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .foto-box { position: relative; width: 88px; height: 88px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .foto-box img { width: 100%; height: 100%; object-fit: cover; }
+    .foto-del { position: absolute; top: 2px; right: 2px; background: rgba(220,38,38,0.9); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; cursor: pointer; }
+    .item { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fff; }
+    .rep-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin: 8px 0; }
+    .rep-row { display: grid; grid-template-columns: 58px 1fr 88px 34px; gap: 6px; align-items: center; margin-bottom: 6px; }
+    .rep-row input { padding: 7px 8px; font-size: 0.88rem; }
+    .report-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.85rem; }
+    .report-table th, .report-table td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }
+    .report-table th { background: #f1f5f9; width: 32%; }
+    .parts-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.83rem; }
+    .parts-table th, .parts-table td { border: 1px solid #cbd5e1; padding: 5px 8px; }
+    .parts-table th { background: #f1f5f9; }
+    .sign-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 36px; margin-top: 44px; text-align: center; padding: 0 20px; }
+    .sign-box { border-top: 1px solid #334155; padding-top: 6px; font-size: 0.82rem; }
+    @media print {
+      header, nav, .no-print { display: none !important; }
+      body { background: #fff; padding: 0; }
+      .tab { display: none !important; }
+      #tab-rep { display: block !important; }
+      .card { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img id="hdrLogo" alt="Logo" />
+    <div>
+      <h1 id="tNombre">TALLER AUTOMOTRIZ</h1>
+      <small id="tSub">Recepción, Control de Tiempos y Entrega</small>
+    </div>
+  </div>
+  <span style="font-size:0.75rem; background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:12px;">💾 Activo</span>
+</header>
+
+<nav id="mainNav">
+  <button type="button" id="btn-pro" class="active" onclick="cambiarTab('pro')">1. Protocolo</button>
+  <button type="button" id="btn-rec" onclick="cambiarTab('rec')">2. Recepción</button>
+  <button type="button" id="btn-tal" onclick="cambiarTab('tal')">3. Taller (<span id="cTal">0</span>)</button>
+  <button type="button" id="btn-ent" onclick="cambiarTab('ent')">4. Entrega (<span id="cEnt">0</span>)</button>
+  <button type="button" id="btn-his" onclick="cambiarTab('his')">5. Historial</button>
+  <button type="button" id="btn-cfg" onclick="cambiarTab('cfg')">⚙️</button>
+</nav>
+
+<div class="container">
+  <!-- 1. PROTOCOLO -->
+  <div id="tab-pro" class="tab active">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+        <h2>📖 Protocolo de Recepción y Entrega</h2>
+        <button type="button" class="btn btn-o no-print" onclick="abrirReporteManual()">🖨️ Imprimir</button>
+      </div>
+      <div class="step-box"><b>1. Bienvenida:</b> Saludar cordialmente al cliente, presentarse con su nombre y consultar el motivo de su visita.</div>
+      <div class="step-box"><b>2. Entrevista y Prueba de Ruta:</b> Registrar los síntomas exactos, testigos encendidos y, si el cliente autoriza prueba de ruta inicial, anotar los ruidos o comportamientos percibidos.</div>
+      <div class="step-box"><b>3. Inspección 360° y Fotos:</b> Revisar junto al cliente el estado exterior, nivel de combustible, herramientas y tomar fotografías de respaldo.</div>
+      <div class="step-box"><b>4. Registro y envío a Secretaria:</b> Solicitar retiro de objetos de valor, guardar el ingreso y enviar la Orden de Trabajo y resumen a secretaria.</div>
+      <div class="step-box"><b>5. Diagnóstico, Repuestos y Entrega:</b> Registrar el diagnóstico del técnico, la solución aplicada y los repuestos utilizados (opcional), pasar a <b>4. Entrega</b> para medir prueba final e imprimir el Informe Total para firma del cliente.</div>
+      <button type="button" class="btn btn-p no-print" onclick="empezarRecepcion()" style="width:100%; margin-top:10px; padding:14px; font-size:1rem;">
+        Siguiente ➡️ Ir a Recepción del Vehículo
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. RECEPCIÓN -->
+  <div id="tab-rec" class="tab">
+    <div class="timer-bar">
+      <div><strong>⏱️ Tiempo Recepción:</strong></div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span class="digits" id="relojRec">00:00</span>
+        <button type="button" class="btn btn-w" id="btnPausaRec" onclick="pausarReanudarRec()">⏸</button>
+        <button type="button" class="btn btn-o" onclick="reiniciarRec()">🔄</button>
+      </div>
+    </div>
+
+    <div class="card" style="background:#eff6ff; border-left:4px solid var(--primary);">
+      <small id="guionTxt">👋 "Buenos días/tardes, bienvenido. ¿En qué le podemos ayudar hoy con su vehículo?"</small>
+    </div>
+
+    <div class="card">
+      <h2>Datos de Ingreso</h2>
+      <div class="grid">
+        <div>
+          <label>Asesor que Recibe *</label>
+          <select id="selAsesor" onchange="cambioSelectAsesor()"></select>
+          <input type="text" id="inAsesorOtro" placeholder="Escriba nombre del asesor..." style="display:none; margin-top:6px;" oninput="actGuion()" />
+        </div>
+        <div><label>Placa *</label><input type="text" id="inPlaca" placeholder="ABC-1234" style="text-transform:uppercase; font-weight:bold;" /></div>
+        <div><label>N° Orden de Trabajo (OT)</label><input type="text" id="inOT" placeholder="OT-101" /></div>
+        <div><label>Cliente *</label><input type="text" id="inCliente" placeholder="Nombre del cliente" /></div>
+        <div><label>Teléfono / WhatsApp *</label><input type="tel" id="inTel" placeholder="0991234567" /></div>
+        <div><label>Vehículo (Marca/Modelo/Año) *</label><input type="text" id="inAuto" placeholder="Mazda BT-50 2010" /></div>
+        <div><label>Kilometraje</label><input type="number" id="inKm" placeholder="145000" /></div>
+        <div>
+          <label>Combustible</label>
+          <select id="inGas"><option>Reserva</option><option>1/4</option><option selected>1/2</option><option>3/4</option><option>Lleno</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Falla Reportada y Prueba de Ruta Inicial</h2>
+      <label>Descripción de la falla que reporta el cliente *</label>
+      <textarea id="inFalla" rows="2" placeholder="Síntomas, cuándo ocurre, condiciones de manejo..."></textarea>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>¿Autoriza prueba de ruta?</label>
+          <select id="inAutPrueba">
+            <option value="Sí autoriza">Sí autoriza</option>
+            <option value="No autoriza">No autoriza</option>
+            <option value="No aplica (ingreso en grúa / no enciende)">No aplica (no enciende / grúa)</option>
+          </select>
+        </div>
+        <div>
+          <label>Lo que se escucha / percibe en prueba de ruta</label>
+          <input type="text" id="inRuidoRuta" placeholder="Ej: Golpeteo delantero izq. al frenar, silbido en turbo..." />
+        </div>
+      </div>
+
+      <label style="margin-top:10px;">Testigos en Tablero</label>
+      <div class="chips" id="chTestigos">
+        <span class="chip" onclick="this.classList.toggle('on')">Check Engine</span>
+        <span class="chip" onclick="this.classList.toggle('on')">Batería</span>
+        <span class="chip" onclick="this.classList.toggle('on')">Aceite</span>
+        <span class="chip" onclick="this.classList.toggle('on')">Temperatura</span>
+        <span class="chip" onclick="this.classList.toggle('on')">ABS/Frenos</span>
+        <span class="chip" onclick="this.classList.toggle('on')">Ninguno</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Inventario, Daños y Fotos del Vehículo</h2>
+      <label>Inventario Verificado</label>
+      <div class="chips" id="chInv">
+        <span class="chip on" onclick="this.classList.toggle('on')">Matrícula</span>
+        <span class="chip on" onclick="this.classList.toggle('on')">Llanta Emergencia</span>
+        <span class="chip on" onclick="this.classList.toggle('on')">Gata y Llave</span>
+        <span class="chip on" onclick="this.classList.toggle('on')">Extintor/Botiquín</span>
+        <span class="chip on" onclick="this.classList.toggle('on')">Radio</span>
+      </div>
+      <input type="text" id="inDanos" placeholder="Anote rayones, abolladuras o piezas faltantes..." style="margin-bottom:10px;" />
+
+      <label>📸 Fotografías del Vehículo (Ingreso / Golpes / Tablero)</label>
+      <input type="file" id="inFotos" accept="image/*" capture="environment" multiple onchange="agregarFotos(this)" />
+      <div class="foto-grid" id="previewFotos"></div>
+
+      <div style="margin-top:16px;">
+        <button type="button" class="btn btn-p" style="width:100%; padding:13px; font-size:0.98rem;" onclick="guardarRecepcion()">✅ Guardar Ingreso y Pasar a Taller</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. EN TALLER -->
+  <div id="tab-tal" class="tab">
+    <div id="listaTal"></div>
+  </div>
+
+  <!-- 4. ENTREGA Y PRUEBA FINAL -->
+  <div id="tab-ent" class="tab">
+    <div id="listaEnt"></div>
+  </div>
+
+  <!-- 5. HISTORIAL -->
+  <div id="tab-his" class="tab">
+    <div class="card" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <input type="text" id="busq" placeholder="Buscar por placa, OT o cliente..." oninput="pintar()" style="flex:1; min-width:180px;" />
+      <button type="button" class="btn btn-d" id="btnLimpiarHis" onclick="limpiarHistorial()">🗑️ Limpiar Historial</button>
+    </div>
+    <div id="listaHis"></div>
+  </div>
+
+  <!-- INFORME TOTAL IMPRIMIBLE -->
+  <div id="tab-rep" class="tab">
+    <div class="card" id="reporteContenido"></div>
+    <div class="no-print" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" class="btn btn-o" onclick="volverDeReporte()">⬅️ Volver</button>
+      <button type="button" class="btn btn-p" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    </div>
+  </div>
+
+  <!-- 6. AJUSTES -->
+  <div id="tab-cfg" class="tab">
+    <div class="card">
+      <h2>Editar Taller, Logo y Asesores</h2>
+      <div class="grid">
+        <div><label>Nombre del Taller</label><input type="text" id="cNom" /></div>
+        <div><label>Teléfono / Dirección</label><input type="text" id="cSub" /></div>
+        <div><label>Color Principal</label><input type="color" id="cCol" value="#1e40af" style="height:42px;" /></div>
+        <div><label>Lista de Asesores (separados por coma)</label><input type="text" id="cAse" placeholder="Carlos, Juan, María" /></div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Logo del Taller (Aparece arriba y en el Informe Impreso)</label>
+        <input type="file" id="cLogoFile" accept="image/*" onchange="cargarLogo(this)" />
+        <div id="cfgLogoPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <button type="button" class="btn btn-p" onclick="guardarCfg()" style="margin-top:14px;">💾 Guardar Cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var cfg = { nom: "TALLER AUTOMOTRIZ", sub: "Recepción, Tiempos y Entrega", col: "#1e40af", ase: "Asesor Principal", logo: "" };
+  var ordenes = [];
+  var fotosTemp = [];
+  var segRec = 0;
+  var runRec = false;
+  var prevTab = "his";
+
+  function leerStorage(clave, defecto) {
+    try {
+      var val = window.localStorage.getItem(clave);
+      return val ? JSON.parse(val) : defecto;
+    } catch (e) {
+      return defecto;
+    }
+  }
+
+  function guardarStorage(clave, datos) {
+    try {
+      window.localStorage.setItem(clave, JSON.stringify(datos));
+    } catch (e) {
+      alert("⚠️ Memoria llena en el navegador. Use 'Limpiar Historial' para liberar espacio.");
+    }
+  }
+
+  cfg = leerStorage("t_cfg5", cfg);
+  ordenes = leerStorage("t_ord5", []);
+  if (!Array.isArray(ordenes)) ordenes = [];
+
+  function fmt(s) {
+    s = Math.max(0, Math.floor(Number(s) || 0));
+    var h = Math.floor(s / 3600);
+    var m = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+    var sec = String(s % 60).padStart(2, "0");
+    return h > 0 ? (String(h).padStart(2, "0") + ":" + m + ":" + sec) : (m + ":" + sec);
+  }
+
+  function cambiarTab(id) {
+    var tabs = document.querySelectorAll(".tab");
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+    var btns = document.querySelectorAll("#mainNav button");
+    for (var j = 0; j < btns.length; j++) btns[j].classList.remove("active");
+    var destino = document.getElementById("tab-" + id);
+    if (destino) destino.classList.add("active");
+    var btnActivo = document.getElementById("btn-" + id);
+    if (btnActivo) btnActivo.classList.add("active");
+
+    if (id === "rec" && segRec === 0) runRec = true;
+  }
+
+  function empezarRecepcion() {
+    segRec = 0;
+    runRec = true;
+    document.getElementById("relojRec").innerText = "00:00";
+    document.getElementById("btnPausaRec").innerText = "⏸";
+    cambiarTab("rec");
+  }
+
+  function pausarReanudarRec() {
+    runRec = !runRec;
+    document.getElementById("btnPausaRec").innerText = runRec ? "⏸" : "▶️";
+  }
+
+  function reiniciarRec() {
+    segRec = 0;
+    runRec = true;
+    document.getElementById("relojRec").innerText = "00:00";
+    document.getElementById("btnPausaRec").innerText = "⏸";
+  }
+
+  function comprimirImagen(file, maxW, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var scale = Math.min(1, maxW / img.width);
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        callback(canvas.toDataURL("image/jpeg", 0.65));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function cargarLogo(input) {
+    if (!input.files || !input.files[0]) return;
+    comprimirImagen(input.files[0], 260, function(base64) {
+      cfg.logo = base64;
+      mostrarLogoPreview();
+    });
+  }
+
+  function quitarLogo() {
+    cfg.logo = "";
+    mostrarLogoPreview();
+  }
+
+  function mostrarLogoPreview() {
+    var box = document.getElementById("cfgLogoPreview");
+    var hdr = document.getElementById("hdrLogo");
+    if (cfg.logo) {
+      hdr.src = cfg.logo;
+      hdr.style.display = "block";
+      box.innerHTML = '<img src="' + cfg.logo + '" style="height:54px; border:1px solid #cbd5e1; border-radius:6px; padding:3px; background:#fff;" /> ' +
+        '<button type="button" class="btn btn-o" onclick="quitarLogo()">Quitar Logo</button>';
+    } else {
+      hdr.style.display = "none";
+      box.innerHTML = '<small style="color:#64748b;">Sin logo cargado.</small>';
+    }
+  }
+
+  function agregarFotos(input) {
+    if (!input.files) return;
+    var files = Array.from(input.files);
+    files.forEach(function(f) {
+      if (fotosTemp.length >= 4) return;
+      comprimirImagen(f, 550, function(base64) {
+        fotosTemp.push(base64);
+        pintarFotosTemp();
+      });
+    });
+    input.value = "";
+  }
+
+  function quitarFotoTemp(idx) {
+    fotosTemp.splice(idx, 1);
+    pintarFotosTemp();
+  }
+
+  function pintarFotosTemp() {
+    var cont = document.getElementById("previewFotos");
+    var html = "";
+    for (var i = 0; i < fotosTemp.length; i++) {
+      html += '<div class="foto-box"><img src="' + fotosTemp[i] + '" /><button type="button" class="foto-del" onclick="quitarFotoTemp(' + i + ')">×</button></div>';
+    }
+    cont.innerHTML = html;
+  }
+
+  function aplicarCfg() {
+    document.documentElement.style.setProperty("--primary", cfg.col || "#1e40af");
+    document.getElementById("tNombre").innerText = cfg.nom || "TALLER AUTOMOTRIZ";
+    document.getElementById("tSub").innerText = cfg.sub || "";
+    document.getElementById("cNom").value = cfg.nom || "";
+    document.getElementById("cSub").value = cfg.sub || "";
+    document.getElementById("cCol").value = cfg.col || "#1e40af";
+    document.getElementById("cAse").value = cfg.ase || "";
+    mostrarLogoPreview();
+
+    var arr = (cfg.ase || "Asesor Principal").split(",");
+    var sel = document.getElementById("selAsesor");
+    var prevVal = sel.value;
+    var opts = "";
+    for (var i = 0; i < arr.length; i++) {
+      var nombre = arr[i].trim();
+      if (nombre) opts += '<option value="' + nombre + '">' + nombre + '</option>';
+    }
+    opts += '<option value="__OTRO__">Otro (escribir nombre)...</option>';
+    sel.innerHTML = opts;
+    if (prevVal && prevVal !== "__OTRO__") sel.value = prevVal;
+    cambioSelectAsesor();
+  }
+
+  function cambioSelectAsesor() {
+    var sel = document.getElementById("selAsesor");
+    var otro = document.getElementById("inAsesorOtro");
+    if (sel.value === "__OTRO__") {
+      otro.style.display = "block";
+      otro.focus();
+    } else {
+      otro.style.display = "none";
+    }
+    actGuion();
+  }
+
+  function obtenerAsesorActual() {
+    var sel = document.getElementById("selAsesor");
+    if (sel.value === "__OTRO__") {
+      return document.getElementById("inAsesorOtro").value.trim() || "Asesor";
+    }
+    return sel.value || "Asesor";
+  }
+
+  function actGuion() {
+    var a = obtenerAsesorActual();
+    document.getElementById("guionTxt").innerHTML = '👋 "Buenos días/tardes, bienvenido a <b>' + cfg.nom + '</b>. Mi nombre es <b>' + a + '</b>, ¿en qué le podemos ayudar hoy con su vehículo?"';
+  }
+
+  function guardarCfg() {
+    cfg.nom = document.getElementById("cNom").value.trim() || "TALLER AUTOMOTRIZ";
+    cfg.sub = document.getElementById("cSub").value.trim() || "";
+    cfg.col = document.getElementById("cCol").value || "#1e40af";
+    cfg.ase = document.getElementById("cAse").value.trim() || "Asesor Principal";
+    guardarStorage("t_cfg5", cfg);
+    aplicarCfg();
+    alert("✅ Ajustes y logo guardados.");
+  }
+
+  function guardarRecepcion() {
+    var placa = document.getElementById("inPlaca").value.trim().toUpperCase();
+    var cli = document.getElementById("inCliente").value.trim();
+    var falla = document.getElementById("inFalla").value.trim();
+    if (!placa || !cli || !falla) {
+      alert("⚠️ Complete Placa, Cliente y Falla reportada.");
+      return;
+    }
+
+    var tests = [];
+    var chT = document.querySelectorAll("#chTestigos .chip.on");
+    for (var i = 0; i < chT.length; i++) tests.push(chT[i].innerText);
+
+    var inv = [];
+    var chI = document.querySelectorAll("#chInv .chip.on");
+    for (var j = 0; j < chI.length; j++) inv.push(chI[j].innerText);
+
+    ordenes.unshift({
+      id: Date.now(),
+      st: "tal",
+      fIngreso: new Date().toLocaleString(),
+      tsIngreso: Date.now(),
+      tRec: segRec,
+      asesor: obtenerAsesorActual(),
+      placa: placa,
+      ot: document.getElementById("inOT").value.trim(),
+      cli: cli,
+      tel: document.getElementById("inTel").value.trim(),
+      auto: document.getElementById("inAuto").value.trim(),
+      km: document.getElementById("inKm").value,
+      gas: document.getElementById("inGas").value,
+      falla: falla,
+      autPrueba: document.getElementById("inAutPrueba").value,
+      ruidoRuta: document.getElementById("inRuidoRuta").value.trim() || "Sin prueba / sin observaciones",
+      tests: tests.join(", ") || "Ninguno",
+      inv: inv.join(", "),
+      danos: document.getElementById("inDanos").value.trim() || "Sin novedades",
+      fotos: fotosTemp.slice(),
+      diagnosticoTec: "",
+      trabajos: "",
+      repuestos: [],
+      segEnt: 0,
+      runEnt: false,
+      iniEnt: null,
+      obsEnt: ""
+    });
+
+    guardarStorage("t_ord5", ordenes);
+    alert("✅ Ingreso guardado (Tiempo recepción: " + fmt(segRec) + ").");
+
+    var limpiarIds = ["inPlaca", "inOT", "inCliente", "inTel", "inAuto", "inKm", "inFalla", "inRuidoRuta", "inDanos"];
+    for (var k = 0; k < limpiarIds.length; k++) document.getElementById(limpiarIds[k]).value = "";
+    fotosTemp = [];
+    pintarFotosTemp();
+    segRec = 0;
+    runRec = false;
+    pintar();
+    cambiarTab("tal");
+  }
+
+  function calcEnt(o) {
+    var t = Number(o.segEnt) || 0;
+    if (o.runEnt && o.iniEnt) t += Math.floor((Date.now() - o.iniEnt) / 1000);
+    return t;
+  }
+
+  function calcTotalRepuestos(o) {
+    if (!o.repuestos || !o.repuestos.length) return 0;
+    var sum = 0;
+    for (var i = 0; i < o.repuestos.length; i++) {
+      var cant = Number(o.repuestos[i].cant) || 0;
+      var precio = Number(o.repuestos[i].precio) || 0;
+      sum += cant * precio;
+    }
+    return sum;
+  }
+
+  function agregarRepuesto(id) {
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id) {
+        if (!Array.isArray(ordenes[i].repuestos)) ordenes[i].repuestos = [];
+        ordenes[i].repuestos.push({ cant: 1, desc: "", precio: "" });
+        guardarStorage("t_ord5", ordenes);
+        pintar();
+        break;
+      }
+    }
+  }
+
+  function quitarRepuesto(id, idx) {
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id && Array.isArray(ordenes[i].repuestos)) {
+        ordenes[i].repuestos.splice(idx, 1);
+        guardarStorage("t_ord5", ordenes);
+        pintar();
+        break;
+      }
+    }
+  }
+
+  function updRepuesto(id, idx, campo, val) {
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id && ordenes[i].repuestos && ordenes[i].repuestos[idx]) {
+        ordenes[i].repuestos[idx][campo] = val;
+        guardarStorage("t_ord5", ordenes);
+        var totEl = document.getElementById("totRep-" + id);
+        if (totEl) totEl.innerText = "$" + calcTotalRepuestos(ordenes[i]).toFixed(2);
+        break;
+      }
+    }
+  }
+
+  function renderBloqueRepuestos(o) {
+    var lista = Array.isArray(o.repuestos) ? o.repuestos : [];
+    var filas = "";
+    for (var r = 0; r < lista.length; r++) {
+      var item = lista[r];
+      filas += '<div class="rep-row">' +
+        '<input type="number" min="1" step="1" value="' + (item.cant || 1) + '" placeholder="Cant." onchange="updRepuesto(' + o.id + ',' + r + ',\'cant\',this.value)" />' +
+        '<input type="text" value="' + (item.desc || '') + '" placeholder="Repuesto usado (ej. Filtro aceite)" onchange="updRepuesto(' + o.id + ',' + r + ',\'desc\',this.value)" />' +
+        '<input type="number" min="0" step="0.01" value="' + (item.precio || '') + '" placeholder="$ Unit." onchange="updRepuesto(' + o.id + ',' + r + ',\'precio\',this.value)" />' +
+        '<button type="button" class="btn btn-d btn-sm" style="padding:7px 0;" onclick="quitarRepuesto(' + o.id + ',' + r + ')">×</button>' +
+      '</div>';
+    }
+    var totalStr = lista.length ? ('<span style="font-size:0.82rem; font-weight:700;">Total Repuestos: <span id="totRep-' + o.id + '">$' + calcTotalRepuestos(o).toFixed(2) + '</span></span>') : '';
+    return '<div class="rep-box">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:' + (lista.length ? '8px' : '0') + ';">' +
+        '<span style="font-size:0.82rem; font-weight:700; color:#334155;">🔩 Repuestos Usados (Opcional)</span>' +
+        '<button type="button" class="btn btn-o btn-sm" onclick="agregarRepuesto(' + o.id + ')">+ Agregar Repuesto</button>' +
+      '</div>' +
+      filas +
+      (lista.length ? '<div style="text-align:right; margin-top:4px;">' + totalStr + '</div>' : '') +
+    '</div>';
+  }
+
+  function updCampo(id, campo, val) {
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id) {
+        ordenes[i][campo] = val;
+        guardarStorage("t_ord5", ordenes);
+        break;
+      }
+    }
+  }
+
+  function pasarAEntrega(id) {
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id) {
+        ordenes[i].st = "ent";
+        ordenes[i].runEnt = true;
+        ordenes[i].iniEnt = Date.now();
+        guardarStorage("t_ord5", ordenes);
+        pintar();
+        cambiarTab("ent");
+        break;
+      }
+    }
+  }
+
+  function toggleRelojEnt(id) {
+    for (var i = 0; i < ordenes.length; i++) {
+      var o = ordenes[i];
+      if (o.id === id) {
+        if (o.runEnt) {
+          o.segEnt = calcEnt(o);
+          o.runEnt = false;
+          o.iniEnt = null;
+        } else {
+          o.runEnt = true;
+          o.iniEnt = Date.now();
+        }
+        guardarStorage("t_ord5", ordenes);
+        pintar();
+        break;
+      }
+    }
+  }
+
+  function finalizarEntrega(id) {
+    for (var i = 0; i < ordenes.length; i++) {
+      var o = ordenes[i];
+      if (o.id === id) {
+        if (o.runEnt) {
+          o.segEnt = calcEnt(o);
+          o.runEnt = false;
+        }
+        o.st = "his";
+        o.fEntrega = new Date().toLocaleString();
+        o.tsFin = Date.now();
+        guardarStorage("t_ord5", ordenes);
+        pintar();
+        abrirInformeTotal(id, "his");
+        break;
+      }
+    }
+  }
+
+  function eliminarRegistro(id) {
+    if (!confirm("¿Eliminar este registro del historial?")) return;
+    ordenes = ordenes.filter(function(o) { return o.id !== id; });
+    guardarStorage("t_ord5", ordenes);
+    pintar();
+  }
+
+  function limpiarHistorial() {
+    var cantHis = ordenes.filter(function(o) { return o.st === "his"; }).length;
+    if (cantHis === 0) {
+      alert("El historial ya está vacío.");
+      return;
+    }
+    if (!confirm("⚠️ ¿Está seguro de borrar todos los " + cantHis + " registros del historial? (Los vehículos activos en Taller o Entrega no se borrarán).")) return;
+    ordenes = ordenes.filter(function(o) { return o.st !== "his"; });
+    guardarStorage("t_ord5", ordenes);
+    pintar();
+    alert("✅ Historial limpiado correctamente.");
+  }
+
+  function abrirInformeTotal(id, origen) {
+    var o = null;
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id) { o = ordenes[i]; break; }
+    }
+    if (!o) return;
+    prevTab = origen || "his";
+    var tiempoTotalTaller = o.tsFin ? Math.floor((o.tsFin - o.tsIngreso) / 1000) : Math.floor((Date.now() - o.tsIngreso) / 1000);
+
+    var logoHtml = cfg.logo ? '<img src="' + cfg.logo + '" style="height:52px; max-width:120px; object-fit:contain;" />' : '';
+    var fotosHtml = "";
+    if (o.fotos && o.fotos.length > 0) {
+      fotosHtml = '<div style="margin-top:10px;"><b style="font-size:0.84rem;">Registro Fotográfico de Ingreso:</b><div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">';
+      for (var f = 0; f < o.fotos.length; f++) {
+        fotosHtml += '<img src="' + o.fotos[f] + '" style="height:105px; border:1px solid #cbd5e1; border-radius:6px;" />';
+      }
+      fotosHtml += '</div></div>';
+    }
+
+    var repHtml = "";
+    var repsValidos = (o.repuestos || []).filter(function(r) { return (r.desc || "").trim() !== "" || Number(r.precio) > 0; });
+    if (repsValidos.length > 0) {
+      var filasRep = "";
+      for (var r = 0; r < repsValidos.length; r++) {
+        var c = Number(repsValidos[r].cant) || 1;
+        var p = Number(repsValidos[r].precio) || 0;
+        var sub = c * p;
+        filasRep += '<tr>' +
+          '<td style="text-align:center;">' + c + '</td>' +
+          '<td>' + (repsValidos[r].desc || 'Repuesto') + '</td>' +
+          '<td style="text-align:right;">$' + p.toFixed(2) + '</td>' +
+          '<td style="text-align:right;">$' + sub.toFixed(2) + '</td>' +
+        '</tr>';
+      }
+      repHtml = '<div style="margin-top:10px;"><b style="font-size:0.85rem;">Detalle de Repuestos Utilizados:</b>' +
+        '<table class="parts-table">' +
+          '<thead><tr><th style="width:12%; text-align:center;">Cant.</th><th>Descripción del Repuesto</th><th style="width:18%; text-align:right;">P. Unit.</th><th style="width:18%; text-align:right;">Subtotal</th></tr></thead>' +
+          '<tbody>' + filasRep +
+            '<tr><th colspan="3" style="text-align:right;">TOTAL REPUESTOS (USD):</th><th style="text-align:right;">$' + calcTotalRepuestos(o).toFixed(2) + '</th></tr>' +
+          '</tbody>' +
+        '</table></div>';
+    }
+
+    document.getElementById("reporteContenido").innerHTML =
+      '<div style="border-bottom:2px solid var(--primary); padding-bottom:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px;">' +
+        '<div style="display:flex; align-items:center; gap:10px;">' + logoHtml +
+          '<div><h2 style="margin:0;">' + cfg.nom + '</h2><small>' + cfg.sub + '</small></div>' +
+        '</div>' +
+        '<div style="text-align:right;"><b>INFORME TOTAL DE SERVICIO</b><br><small>OT: ' + (o.ot || 'S/N') + '</small></div>' +
+      '</div>' +
+      '<table class="report-table">' +
+        '<tr><th>Cliente / Teléfono</th><td>' + o.cli + ' (' + o.tel + ')</td></tr>' +
+        '<tr><th>Vehículo / Placa / Km</th><td>' + o.auto + ' • <b>' + o.placa + '</b> • ' + (o.km || '-') + ' km</td></tr>' +
+        '<tr><th>Asesor Responsable</th><td>' + o.asesor + '</td></tr>' +
+        '<tr><th>Fecha y Hora Ingreso</th><td>' + o.fIngreso + '</td></tr>' +
+        '<tr><th>Fecha y Hora Entrega</th><td>' + (o.fEntrega || 'En proceso') + '</td></tr>' +
+        '<tr><th>Falla Reportada</th><td>' + o.falla + '</td></tr>' +
+        '<tr><th>Prueba de Ruta Inicial</th><td>Autorización: <b>' + (o.autPrueba || 'Sí') + '</b><br>Hallazgos / Ruidos: ' + (o.ruidoRuta || 'Ninguno') + '</td></tr>' +
+        '<tr><th>Testigos / Combustible</th><td>Testigos: ' + o.tests + ' | Gasolina: ' + o.gas + '</td></tr>' +
+        '<tr><th>Inventario y Daños Previos</th><td>Inv: ' + o.inv + '<br>Daños: ' + o.danos + '</td></tr>' +
+        '<tr><th>Diagnóstico del Técnico</th><td>' + (o.diagnosticoTec || 'Pendiente de registro') + '</td></tr>' +
+        '<tr><th>Trabajos y Solución Aplicada</th><td>' + (o.trabajos || 'Pendiente de registro') + '</td></tr>' +
+        '<tr><th>Observaciones de Entrega</th><td>' + (o.obsEnt || 'Vehículo verificado y probado en ruta') + '</td></tr>' +
+        '<tr><th>Control de Tiempos</th><td>' +
+          '• Tiempo de Recepción: <b>' + fmt(o.tRec) + '</b><br>' +
+          '• Tiempo Prueba Final y Entrega: <b>' + fmt(calcEnt(o)) + '</b><br>' +
+          '• Estancia Total en Taller: <b>' + fmt(tiempoTotalTaller) + '</b>' +
+        '</td></tr>' +
+      '</table>' +
+      repHtml +
+      fotosHtml +
+      '<p style="font-size:0.78rem; color:#475569; margin-top:12px;">Declaro haber revisado el vehículo y estar conforme con el inventario registrado al ingreso, los trabajos realizados y la entrega satisfactoria del automotor.</p>' +
+      '<div class="sign-grid">' +
+        '<div class="sign-box"><b>Firma del Cliente</b><br>' + o.cli + '<br>C.I.: ____________________</div>' +
+        '<div class="sign-box"><b>Firma Asesor / Taller</b><br>' + (o.asesor || 'Asesor') + '<br>Recibido / Entregado</div>' +
+      '</div>';
+    cambiarTab("rep");
+  }
+
+  function abrirReporteManual() {
+    prevTab = "pro";
+    document.getElementById("reporteContenido").innerHTML = document.getElementById("tab-pro").innerHTML;
+    cambiarTab("rep");
+  }
+
+  function volverDeReporte() {
+    cambiarTab(prevTab);
+  }
+
+  function enviarWA(id, tipo) {
+    var o = null;
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].id === id) { o = ordenes[i]; break; }
+    }
+    if (!o) return;
+
+    var repsValidos = (o.repuestos || []).filter(function(r) { return (r.desc || "").trim() !== "" || Number(r.precio) > 0; });
+    var textoRep = "";
+    if (repsValidos.length > 0) {
+      var lines = [];
+      for (var r = 0; r < repsValidos.length; r++) {
+        var c = Number(repsValidos[r].cant) || 1;
+        var p = Number(repsValidos[r].precio) || 0;
+        lines.push("  - " + c + "x " + (repsValidos[r].desc || "Repuesto") + " ($" + (c * p).toFixed(2) + ")");
+      }
+      textoRep = "%0A*Repuestos ($" + calcTotalRepuestos(o).toFixed(2) + "):*%0A" + lines.join("%0A");
+    }
+
+    if (tipo === "sec") {
+      var otTexto = o.ot ? o.ot : "Pendiente asignar";
+      var txtSec = "*" + cfg.nom + "* - ORDEN DE TRABAJO%0A" +
+        "*N° OT:* " + otTexto + "%0A" +
+        "*Placa:* " + o.placa + " (" + o.auto + ")%0A" +
+        "*Cliente:* " + o.cli + " (" + o.tel + ")%0A" +
+        "*Asesor:* " + o.asesor + "%0A" +
+        "*Km:* " + (o.km || '-') + " | *Combustible:* " + o.gas + "%0A" +
+        "*Falla reportada:* " + o.falla + "%0A" +
+        "*Prueba de ruta:* " + o.autPrueba + " (" + o.ruidoRuta + ")%0A" +
+        "*Testigos:* " + o.tests + "%0A" +
+        "*Inventario:* " + o.inv + "%0A" +
+        "*Daños previos:* " + o.danos +
+        (o.diagnosticoTec ? "%0A*Diagnóstico:* " + o.diagnosticoTec : "") +
+        (o.trabajos ? "%0A*Trabajos:* " + o.trabajos : "") +
+        textoRep +
+        "%0A*Tiempo de Recepción:* " + fmt(o.tRec);
+      window.open("https://wa.me/?text=" + txtSec, "_blank");
+    } else {
+      var num = (o.tel || "").replace(/\D/g, "");
+      if (num.indexOf("0") === 0) num = "593" + num.substring(1);
+      var txtCli = "*" + cfg.nom + "* - Comprobante de Entrega%0A" +
+        (o.ot ? "*OT:* " + o.ot + "%0A" : "") +
+        "*Vehículo:* " + o.auto + " (*" + o.placa + "*)%0A" +
+        "*Diagnóstico:* " + (o.diagnosticoTec || '-') + "%0A" +
+        "*Trabajos realizados:* " + (o.trabajos || o.falla) +
+        textoRep +
+        "%0A*Obs. Entrega:* " + (o.obsEnt || "OK");
+      window.open("https://wa.me/" + num + "?text=" + txtCli, "_blank");
+    }
+  }
+
+  function pintar() {
+    var tal = [], ent = [], his = [];
+    for (var i = 0; i < ordenes.length; i++) {
+      if (ordenes[i].st === "tal") tal.push(ordenes[i]);
+      else if (ordenes[i].st === "ent") ent.push(ordenes[i]);
+      else if (ordenes[i].st === "his") his.push(ordenes[i]);
+    }
+
+    document.getElementById("cTal").innerText = tal.length;
+    document.getElementById("cEnt").innerText = ent.length;
+    document.getElementById("btnLimpiarHis").style.display = his.length > 0 ? "inline-block" : "none";
+
+    // 3. EN TALLER
+    if (tal.length === 0) {
+      document.getElementById("listaTal").innerHTML = '<div class="card">No hay vehículos en taller.</div>';
+    } else {
+      var htmlTal = "";
+      for (var t = 0; t < tal.length; t++) {
+        var o = tal[t];
+        htmlTal += '<div class="item">' +
+          '<strong>🚗 ' + o.placa + ' - ' + o.auto + (o.ot ? ' [OT: ' + o.ot + ']' : '') + '</strong><br><small>Cliente: ' + o.cli + ' | Asesor: ' + o.asesor + ' | Rec: ' + fmt(o.tRec) + '</small>' +
+          '<div style="margin:8px 0; display:grid; gap:8px;">' +
+            '<input type="text" value="' + (o.ot || '') + '" placeholder="N° Orden de Trabajo (OT)" onchange="updCampo(' + o.id + ',\'ot\',this.value)" />' +
+            '<input type="text" value="' + (o.diagnosticoTec || '') + '" placeholder="Diagnóstico del técnico (causa raíz encontrada)..." onchange="updCampo(' + o.id + ',\'diagnosticoTec\',this.value)" />' +
+            '<input type="text" value="' + (o.trabajos || '') + '" placeholder="Qué se hizo para arreglar el problema..." onchange="updCampo(' + o.id + ',\'trabajos\',this.value)" />' +
+          '</div>' +
+          renderBloqueRepuestos(o) +
+          '<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">' +
+            '<button type="button" class="btn btn-o" onclick="enviarWA(' + o.id + ',\'sec\')">📋 Enviar OT a Secretaria (WA)</button>' +
+            '<button type="button" class="btn btn-o" onclick="abrirInformeTotal(' + o.id + ',\'tal\')">🖨️ Ver / Imprimir Informe</button>' +
+            '<button type="button" class="btn btn-w" onclick="pasarAEntrega(' + o.id + ')">🚗 Pasar a Entrega / Prueba</button>' +
+          '</div></div>';
+      }
+      document.getElementById("listaTal").innerHTML = htmlTal;
+    }
+
+    // 4. ENTREGA
+    if (ent.length === 0) {
+      document.getElementById("listaEnt").innerHTML = '<div class="card">No hay vehículos listos para entrega. Páselos desde la pestaña <b>3. Taller</b>.</div>';
+    } else {
+      var htmlEnt = "";
+      for (var e = 0; e < ent.length; e++) {
+        var oe = ent[e];
+        htmlEnt += '<div class="item">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+            '<div><strong>🚗 ' + oe.placa + ' - ' + oe.auto + (oe.ot ? ' [OT: ' + oe.ot + ']' : '') + '</strong><br><small>Cliente: ' + oe.cli + ' | Tiempo Rec: ' + fmt(oe.tRec) + '</small></div>' +
+            '<div style="background:#0f172a; color:#fff; padding:8px 12px; border-radius:8px; display:flex; align-items:center; gap:8px;">' +
+              '<span class="digits" style="font-size:1.1rem;" id="relojEnt-' + oe.id + '">' + fmt(calcEnt(oe)) + '</span>' +
+              '<button type="button" class="btn btn-w" onclick="toggleRelojEnt(' + oe.id + ')">' + (oe.runEnt ? '⏸' : '▶️') + '</button>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin:10px 0; display:grid; gap:8px;">' +
+            '<div><label>Diagnóstico del Técnico</label>' +
+            '<input type="text" value="' + (oe.diagnosticoTec || '') + '" placeholder="Causa raíz diagnosticada..." onchange="updCampo(' + oe.id + ',\'diagnosticoTec\',this.value)" /></div>' +
+            '<div><label>Solución / Trabajos Realizados para Arreglar el Problema</label>' +
+            '<input type="text" value="' + (oe.trabajos || '') + '" placeholder="Reparación realizada..." onchange="updCampo(' + oe.id + ',\'trabajos\',this.value)" /></div>' +
+            renderBloqueRepuestos(oe) +
+            '<div><label>Observaciones de Prueba de Ruta Final y Entrega</label>' +
+            '<input type="text" value="' + (oe.obsEnt || '') + '" placeholder="Ej: Prueba en ruta sin ruidos, repuestos viejos en cajuela..." onchange="updCampo(' + oe.id + ',\'obsEnt\',this.value)" /></div>' +
+          '</div>' +
+          '<div style="display:flex; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:6px;">' +
+            '<button type="button" class="btn btn-o" onclick="abrirInformeTotal(' + oe.id + ',\'ent\')">🖨️ Vista Previa / Imprimir</button>' +
+            '<button type="button" class="btn btn-s" onclick="finalizarEntrega(' + oe.id + ')">🏁 Finalizar Entrega e Imprimir</button>' +
+          '</div></div>';
+      }
+      document.getElementById("listaEnt").innerHTML = htmlEnt;
+    }
+
+    // 5. HISTORIAL
+    var q = (document.getElementById("busq").value || "").toLowerCase();
+    var fHis = [];
+    for (var h = 0; h < his.length; h++) {
+      var matchOt = (his[h].ot || "").toLowerCase().indexOf(q) !== -1;
+      if (his[h].placa.toLowerCase().indexOf(q) !== -1 || his[h].cli.toLowerCase().indexOf(q) !== -1 || matchOt) {
+        fHis.push(his[h]);
+      }
+    }
+    if (fHis.length === 0) {
+      document.getElementById("listaHis").innerHTML = '<div class="card">Historial vacío.</div>';
+    } else {
+      var htmlHis = "";
+      for (var x = 0; x < fHis.length; x++) {
+        var oh = fHis[x];
+        var totRep = calcTotalRepuestos(oh);
+        htmlHis += '<div class="item">' +
+          '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">' +
+            '<div><strong>✅ ' + oh.placa + ' - ' + oh.auto + (oh.ot ? ' [OT: ' + oh.ot + ']' : '') + '</strong> (' + oh.cli + ')<br>' +
+            '<small>Rec: <b>' + fmt(oh.tRec) + '</b> | Prueba/Entrega: <b>' + fmt(oh.segEnt) + '</b>' + (totRep > 0 ? ' | Repuestos: <b>$' + totRep.toFixed(2) + '</b>' : '') + ' | Entregado: ' + oh.fEntrega + '</small></div>' +
+            '<button type="button" class="btn btn-d btn-sm" title="Borrar registro" onclick="eliminarRegistro(' + oh.id + ')">×</button>' +
+          '</div>' +
+          '<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">' +
+            '<button type="button" class="btn btn-p" onclick="abrirInformeTotal(' + oh.id + ',\'his\')">🖨️ Imprimir Informe Total</button>' +
+            '<button type="button" class="btn btn-o" onclick="enviarWA(' + oh.id + ',\'cli\')">💬 Enviar a Cliente WA</button>' +
+          '</div></div>';
+      }
+      document.getElementById("listaHis").innerHTML = htmlHis;
+    }
+  }
+
+  setInterval(function() {
+    if (runRec && document.getElementById("tab-rec").classList.contains("active")) {
+      segRec++;
+      document.getElementById("relojRec").innerText = fmt(segRec);
+    }
+    for (var i = 0; i < ordenes.length; i++) {
+      var o = ordenes[i];
+      if (o.st === "ent" && o.runEnt) {
+        var el = document.getElementById("relojEnt-" + o.id);
+        if (el) el.innerText = fmt(calcEnt(o));
+      }
+    }
+  }, 1000);
+
+  aplicarCfg();
+  pintar();
+</script>
+</body>
+</html>
